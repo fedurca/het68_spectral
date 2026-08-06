@@ -56,6 +56,8 @@ jobs:
         run: pnpm run test:wasm
 
       - name: TypeScript tests
+        # Scoped by vitest.config.ts to packages/**/*.test.ts so the Emscripten
+        # SDK cache under emsdk-cache/ is never loaded as part of the suite.
         run: pnpm run test
 
       - name: Typecheck

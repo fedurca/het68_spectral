@@ -3,6 +3,7 @@ node_modules/
 dist/
 build/
 .wrangler/
+emsdk-cache/
 # Local Basic Auth credentials for "wrangler dev"
 .dev.vars
 *.tsbuildinfo
