@@ -1,0 +1,155 @@
+name: build and deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # build-info stamps the commit, and a shallow clone still knows it, but the
+          # branch name and dirty check need the real repository.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The DSP is C compiled to WebAssembly, and the same sources build for the
+      # firmware's second core. Both are compiled here so a change that breaks one is
+      # caught before it is deployed.
+      # Pinned to a commit rather than a tag. A tag is mutable, and this action runs
+      # with access to the checkout before the deploy job ever sees a secret.
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
+        with:
+          version: 4.0.19
+          actions-cache-folder: emsdk-cache
+
+      - name: Build the DSP core to WebAssembly
+        run: pnpm run build:dsp
+
+      - name: Native DSP tests
+        run: pnpm run test:dsp
+
+      # The same vectors through the WebAssembly build. Native passing and WebAssembly
+      # failing is exactly the drift the shared C sources exist to prevent.
+      - name: WebAssembly DSP smoke test
+        run: pnpm run test:wasm
+
+      - name: TypeScript tests
+        run: pnpm run test
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Worker syntax
+        run: pnpm run check
+
+      - name: Stamp build info
+        run: pnpm run build:info
+
+      - name: Build the web application
+        run: pnpm --filter @het68/web run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          retention-days: 7
+
+      # The WebAssembly artifact is not committed, so the deploy job would otherwise
+      # have to rebuild it with the whole Emscripten toolchain.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsp-wasm
+          path: packages/dsp-core/wasm
+          retention-days: 7
+
+  deploy:
+    needs: build
+    # The repository check keeps the Cloudflare token out of forks: a pull request from
+    # a fork cannot reach it anyway, but a fork pushing to its own main would otherwise
+    # try, fail confusingly, and put the account id in a public log.
+    if: >-
+      github.repository == 'fedurca/het68_spectral' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # This job has no workspace install, so the action fetches wrangler itself.
+          # The version is the one in the root package.json, so a deployment uses the
+          # same wrangler that was used locally.
+          packageManager: npm
+          wranglerVersion: "4.119.0"
+          # Assets are uploaded from apps/web/dist as configured in wrangler.toml.
+          command: deploy
+
+  desktop:
+    # Only for tagged releases: a dmg on every push to main would be noise, and the
+    # runner minutes are not free.
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - name: Build the dmg
+        # Unsigned. Signing needs an Apple Developer identity in the repository
+        # secrets; until then the dmg has to be opened past Gatekeeper by hand.
+        run: pnpm --filter @het68/desktop exec electron-builder --mac dmg --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: het68-spectral-macos
+          path: apps/desktop/release/*.dmg
+          retention-days: 30

@@ -1,0 +1,32 @@
+{
+  "name": "het68-spectral",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Spectrogram analyzer for the het68 6-microphone detection cube",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:dsp": "pnpm --filter @het68/dsp-core run build",
+    "test:dsp": "pnpm --filter @het68/dsp-core run test:native",
+    "test:wasm": "pnpm --filter @het68/dsp-core run test:wasm",
+    "build:info": "node scripts/build-info.mjs",
+    "build": "pnpm run build:dsp && pnpm run build:info && pnpm --filter @het68/web run build",
+    "dev": "pnpm --filter @het68/web run dev",
+    "dev:worker": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "vitest run",
+    "check": "node --check src/worker.js && node --check scripts/build-info.mjs",
+    "desktop": "pnpm --filter @het68/desktop run start",
+    "desktop:selftest": "pnpm --filter @het68/desktop run selftest",
+    "desktop:dmg": "pnpm --filter @het68/desktop run dist"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.119.0"
+  }
+}

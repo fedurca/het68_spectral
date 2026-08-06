@@ -1,0 +1,22 @@
+{
+  "name": "@het68/io",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WAV loading, session schema, annotations and Remote ID ground truth",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

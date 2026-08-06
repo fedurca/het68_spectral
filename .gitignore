@@ -1,0 +1,28 @@
+node_modules/
+.pnpm-store/
+dist/
+build/
+.wrangler/
+# Local Basic Auth credentials for "wrangler dev"
+.dev.vars
+*.tsbuildinfo
+
+# Generated build stamp
+apps/web/public/build-info.json
+
+# Emscripten output (built by pnpm run build:dsp / CI)
+packages/dsp-core/wasm/
+packages/dsp-core/.emcache/
+
+# Native test binaries
+packages/dsp-core/test/bin/
+
+# Electron packaging output
+apps/desktop/release/
+
+# Local recordings and captures are large; keep them out of git
+*.wav
+!packages/io/src/__fixtures__/*.wav
+adv_payloads.ndjson
+
+.DS_Store

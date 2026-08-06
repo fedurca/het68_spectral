@@ -1,0 +1,34 @@
+name = "het68-spectral"
+main = "src/worker.js"
+compatibility_date = "2026-08-01"
+
+# Workers with assets rather than Pages, matching het68_webflasher: the same deployment
+# serves the static bundle and the Basic Auth and COOP/COEP headers the analyzer needs,
+# and there is only one thing to configure rather than a project plus a set of header
+# rules.
+[assets]
+directory = "apps/web/dist"
+binding = "ASSETS"
+# The application is a single document; anything unrecognised is the app's own route
+# rather than a missing file.
+not_found_handling = "single-page-application"
+# Without this the asset server answers before the worker runs, so a static file would
+# be delivered with neither the password check nor the isolation headers. Both are the
+# reason this worker exists.
+run_worker_first = true
+
+[[routes]]
+pattern = "spectral.het68.cz"
+custom_domain = true
+
+[observability]
+enabled = true
+
+# BASIC_AUTH_USER and BASIC_AUTH_PASS are secrets, never variables:
+#   npx wrangler secret put BASIC_AUTH_USER
+#   npx wrangler secret put BASIC_AUTH_PASS
+# There is no default. A deployment without them serves 503 to everyone rather than
+# falling back to a password that is written down in this repository.
+#
+# For "wrangler dev" the same two names come from .dev.vars, which is not committed:
+#   printf 'BASIC_AUTH_USER="dev"\nBASIC_AUTH_PASS="dev"\n' > .dev.vars

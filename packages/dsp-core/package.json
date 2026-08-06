@@ -1,0 +1,20 @@
+{
+  "name": "@het68/dsp-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "het68 DSP core in C, compiled to WebAssembly",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "bash build.sh",
+    "test:native": "bash test/run-native.sh",
+    "test:wasm": "node test/smoke.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

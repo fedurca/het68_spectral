@@ -1,0 +1,60 @@
+{
+  "name": "@het68/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron shell for the het68 spectral analyzer",
+  "author": "het68",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "pnpm --filter @het68/web run build && electron .",
+    "dev": "electron . --dev",
+    "selftest": "electron . --selftest",
+    "dist": "pnpm --filter @het68/web run build && electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^40.2.1",
+    "electron-builder": "^26.0.24"
+  },
+  "dependencies": {
+    "@serialport/parser-readline": "^13.0.0",
+    "serialport": "^13.0.0"
+  },
+  "build": {
+    "appId": "cz.het68.spectral",
+    "productName": "het68 spectral",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": ["main.cjs", "preload.cjs", "capture.cjs", "resources/**"],
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "renderer"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "resources/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        }
+      ],
+      "hardenedRuntime": true,
+      "entitlements": "resources/entitlements.mac.plist",
+      "entitlementsInherit": "resources/entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "het68 spectral records six-channel audio from the detection cube for spectrogram analysis."
+      }
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Science"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+# Running a script must not silently reinstall. The desktop package pulls Electron and
+# a native serial binding, so an implicit install triggered by "pnpm test" can take
+# minutes and, where the native build fails, replaces a test failure with an install
+# failure. Installs are explicit here and in CI.
+verifyDepsBeforeRun: false
+confirmModulesPurge: false
+allowBuilds:
+  # Native serial bindings, needed for the firmware's event line in the desktop build.
+  # A failure here is survivable: the main process loads serialport lazily and the
+  # audio analysis works without it.
+  "@serialport/bindings-cpp": true
+  # Downloads the Electron binary. Without it the desktop build cannot start at all.
+  electron: true
+  # Windows installer tooling; only the macOS dmg is produced for now.
+  electron-winstaller: false
+  esbuild: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - miniflare@5.20260801.0-alpha
+  - wrangler@4.119.0
