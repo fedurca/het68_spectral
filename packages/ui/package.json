@@ -1,6 +1,6 @@
 {
   "name": "@het68/ui",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "private": true,
   "type": "module",
   "description": "Shared UI: design tokens, WebGL2 spectrogram, plots and controls",

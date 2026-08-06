@@ -7,6 +7,12 @@ All notable changes to het68 spectral are documented here. The format follows
 Pre-built macOS `.dmg` and Ubuntu `.snap` builds for each tagged release are
 attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases).
 
+## [2.0.4] — 2026-08-06
+
+### Fixed
+- Build the Ubuntu snap inside the existing Ubuntu CI job (and attach it with the
+  macOS dmg) so a separate Linux job is not blocked by GitHub Actions outages.
+
 ## [2.0.3] — 2026-08-06
 
 ### Added

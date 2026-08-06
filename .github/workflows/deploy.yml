@@ -86,6 +86,28 @@ jobs:
           path: packages/dsp-core/wasm
           retention-days: 7
 
+      # Ubuntu snap only on SemVer tags (same cadence as the macOS dmg). Built here
+      # on the already-warm ubuntu runner so we do not open a second Linux job that
+      # can fail during GitHub "resolve action download info" outages.
+      - name: Install snapcraft
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft --version
+
+      - name: Build the snap
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
+        env:
+          SNAPCRAFT_BUILD_ENVIRONMENT: host
+
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: het68-spectral-snap
+          path: apps/desktop/release/*.snap
+          retention-days: 30
+
   deploy:
     needs: build
     # The repository check keeps the Cloudflare token out of forks: a pull request from
@@ -143,6 +165,11 @@ jobs:
           name: web-dist
           path: apps/web/dist
 
+      - uses: actions/download-artifact@v5
+        with:
+          name: het68-spectral-snap
+          path: apps/desktop/release-snap
+
       - name: Build the dmg
         # No Apple Developer identity in CI yet. electron-builder ships with
         # identity:null; afterPack.cjs applies an ad-hoc codesign so Gatekeeper
@@ -163,7 +190,9 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
-          files: apps/desktop/release/*.dmg
+          files: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release-snap/*.snap
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
@@ -178,63 +207,19 @@ jobs:
             ```
 
             ### Ubuntu / Linux
-            Install the `.snap` from this release (also built by CI):
+            Install the `.snap` from this release:
 
             ```bash
             sudo snap install --dangerous ./het68-spectral_*.snap
             ```
 
             `--dangerous` is required until the snap is published on the Snap Store.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            Connect extra interfaces if live capture or serial need them:
 
-  desktop-linux:
-    # Ubuntu snap for the same SemVer tag. Waits on the macOS job so the GitHub
-    # Release already exists, then attaches the .snap asset.
-    needs: [build, desktop]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      - uses: actions/download-artifact@v5
-        with:
-          name: web-dist
-          path: apps/web/dist
-
-      - name: Install snapcraft
-        run: |
-          sudo snap install snapcraft --classic
-          snapcraft --version
-
-      - name: Build the snap
-        # core24 + useDestructiveMode: build on the GitHub runner host (no LXD/Multipass).
-        run: pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
-        env:
-          SNAPCRAFT_BUILD_ENVIRONMENT: host
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: het68-spectral-snap
-          path: apps/desktop/release/*.snap
-          retention-days: 30
-
-      - name: Attach snap to GitHub Release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
-        with:
-          files: apps/desktop/release/*.snap
-          fail_on_unmatched_files: true
+            ```bash
+            sudo snap connect het68-spectral:audio-record
+            sudo snap connect het68-spectral:serial-port
+            sudo snap connect het68-spectral:alsa
+            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

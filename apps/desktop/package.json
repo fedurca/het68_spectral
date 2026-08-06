@@ -1,6 +1,6 @@
 {
   "name": "@het68/desktop",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "private": true,
   "description": "Electron shell for the het68 spectral analyzer",
   "author": "het68",
@@ -49,7 +49,9 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ],
       "identity": null,
@@ -69,7 +71,9 @@
       "target": [
         {
           "target": "snap",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "Science",
@@ -94,7 +98,11 @@
           "home",
           "removable-media"
         ],
-        "stagePackages": ["default", "ffmpeg", "libasound2t64"]
+        "stagePackages": [
+          "default",
+          "ffmpeg",
+          "libasound2t64"
+        ]
       }
     }
   }
