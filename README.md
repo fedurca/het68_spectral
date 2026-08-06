@@ -58,6 +58,30 @@ Building the WebAssembly artifact that includes DOA therefore produces a GPL-cov
 binary; see `packages/dsp-core/csrc/doa/LICENSE.GPL3` and `VENDOR.md`. Deployments
 already sit behind Basic Auth; that is access control, not a substitute for GPL
 compliance if you redistribute the WASM.
+
+## Downloads
+
+Pre-built desktop builds for each tagged release are published on GitHub Releases,
+with release notes / changelog:
+
+**https://github.com/fedurca/het68_spectral/releases**
+
+Create a GitHub Release whose tag is SemVer ([semver.org](https://semver.org/)) —
+`vX.Y.Z` (e.g. `v2.0.1`) — and CI builds the web bundle, deploys
+`spectral.het68.cz`, builds the unsigned macOS `.dmg`, and attaches it to that
+release. The full history lives in [`CHANGELOG.md`](CHANGELOG.md).
+
+```bash
+# list releases
+gh release list -R fedurca/het68_spectral
+
+# download the macOS dmg for a tag
+gh release download v2.0.1 -R fedurca/het68_spectral -p '*.dmg'
+```
+
+The `.dmg` is unsigned until an Apple Developer identity is configured in CI; the
+first launch needs Gatekeeper to be overridden by hand.
+
 ## Requirements
 
 - Node 20 or newer and pnpm 11 (`corepack enable pnpm`).

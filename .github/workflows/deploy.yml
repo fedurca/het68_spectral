@@ -123,6 +123,8 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
 
@@ -153,3 +155,18 @@ jobs:
           name: het68-spectral-macos
           path: apps/desktop/release/*.dmg
           retention-days: 30
+
+      # Same pattern as het68 firmware: tagged SemVer release gets downloadable
+      # assets plus notes pointing at CHANGELOG.md.
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        with:
+          files: apps/desktop/release/*.dmg
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          body: |
+            See [CHANGELOG.md](https://github.com/fedurca/het68_spectral/blob/${{ github.ref_name }}/CHANGELOG.md) for the curated release notes.
+
+            The macOS `.dmg` is unsigned; override Gatekeeper on first launch.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

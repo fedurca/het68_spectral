@@ -1,6 +1,6 @@
 {
   "name": "@het68/desktop",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Electron shell for the het68 spectral analyzer",
   "author": "het68",
