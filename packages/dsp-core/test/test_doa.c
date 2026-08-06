@@ -76,19 +76,23 @@ void test_doa_host(void) {
   int found = 0;
   float az = 0, el = 0, conf = 0;
   int has_tracks = 0;
-  char *save = NULL;
-  for (char *line = strtok_r(lines, "\n", &save); line;
-       line = strtok_r(NULL, "\n", &save)) {
+  char *cursor = lines;
+  while (cursor && *cursor) {
+    char *nl = strchr(cursor, '\n');
+    if (nl) *nl = '\0';
+    char *line = cursor;
     if (strncmp(line, "TRACKS", 6) == 0) has_tracks = 1;
-    if (strncmp(line, "SRC class=drone", 15) != 0) continue;
-    if (found) continue;
-    found = 1;
-    const char *paz = strstr(line, "az=");
-    const char *pel = strstr(line, "el=");
-    const char *pc = strstr(line, "conf=");
-    if (paz) az = strtof(paz + 3, NULL);
-    if (pel) el = strtof(pel + 3, NULL);
-    if (pc) conf = strtof(pc + 5, NULL);
+    if (strncmp(line, "SRC class=drone", 15) == 0 && !found) {
+      found = 1;
+      const char *paz = strstr(line, "az=");
+      const char *pel = strstr(line, "el=");
+      const char *pc = strstr(line, "conf=");
+      if (paz) az = strtof(paz + 3, NULL);
+      if (pel) el = strtof(pel + 3, NULL);
+      if (pc) conf = strtof(pc + 5, NULL);
+    }
+    if (!nl) break;
+    cursor = nl + 1;
   }
   check(found, "SRC class=drone appears in the line buffer");
   if (found) {
