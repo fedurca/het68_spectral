@@ -16,6 +16,7 @@ import {
   N_PAIRS,
   PAIRS,
   WindowKind,
+  type DoaParams,
   type F0TrackPoint,
 } from "@het68/dsp-core";
 import type {
@@ -591,6 +592,67 @@ function handleSynth(req: Extract<WorkerRequest, { kind: "synth" }>) {
   };
 }
 
+function applySweepKey(base: DoaParams, key: string, value: number): DoaParams {
+  const p = { ...base };
+  switch (key) {
+    case "edge_mm":
+      p.edgeMm = value;
+      break;
+    case "c_mm_s":
+      p.cMmS = value;
+      break;
+    case "drone_rms":
+      p.droneRms = value;
+      break;
+    case "wind_ratio":
+      p.windRatio = value;
+      break;
+    case "wind_rms_min":
+      p.windRmsMin = value;
+      break;
+    case "drone_crest_max":
+      p.droneCrestMax = value;
+      break;
+    case "drone_conf_min":
+      p.droneConfMin = value;
+      break;
+    case "veh_rms":
+      p.vehRms = value;
+      break;
+    case "bird_rms":
+      p.birdRms = value;
+      break;
+    case "walk_rms":
+      p.walkRms = value;
+      break;
+    case "pair_mask":
+      p.pairMask = value >>> 0;
+      break;
+    default:
+      throw new Error(`Unknown DOA sweep key "${key}"`);
+  }
+  return p;
+}
+
+function handleDoa(req: Extract<WorkerRequest, { kind: "doa" }>) {
+  const a = requireAudio();
+  const result = requireCore().doaRun(a.planar, a.frames, req.params);
+  return { result, transfer: [] as Transferable[] };
+}
+
+function handleDoaSweep(req: Extract<WorkerRequest, { kind: "doaSweep" }>) {
+  const a = requireAudio();
+  const c = requireCore();
+  const points = req.values.map((value) => {
+    const params = applySweepKey(req.params, req.sweepKey, value);
+    return { value, result: c.doaRun(a.planar, a.frames, params) };
+  });
+  return {
+    result: { sweepKey: req.sweepKey, points },
+    transfer: [] as Transferable[],
+  };
+}
+
 // ---- dispatch -------------------------------------------------------------
 
 async function dispatch(
@@ -633,6 +695,10 @@ async function dispatch(
       return handleSignatureMatch(req);
     case "synth":
       return handleSynth(req);
+    case "doa":
+      return handleDoa(req);
+    case "doaSweep":
+      return handleDoaSweep(req);
     case "arena":
       return { result: requireCore().arenaUsage(), transfer: [] };
     default: {

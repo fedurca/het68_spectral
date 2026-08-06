@@ -1,19 +1,21 @@
 {
-  "name": "@het68/io",
+  "name": "@het68/license",
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "WAV loading, session schema, annotations and Remote ID ground truth",
+  "description": "H68P license blob verify and PARAM import gating",
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gen-fixture": "node scripts/gen-fixture.mjs"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "@noble/hashes": "^1.8.0",
+    "@noble/secp256k1": "^2.3.0"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

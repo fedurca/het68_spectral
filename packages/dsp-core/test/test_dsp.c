@@ -23,10 +23,10 @@
 #include "h68_synth.h"
 #include "h68_window.h"
 
-static int g_fail;
-static int g_checks;
+int g_fail;
+int g_checks;
 
-static void check(int cond, const char *what) {
+void check(int cond, const char *what) {
   ++g_checks;
   if (!cond) {
     ++g_fail;
@@ -34,7 +34,7 @@ static void check(int cond, const char *what) {
   }
 }
 
-static void check_near(double got, double want, double tol, const char *what) {
+void check_near(double got, double want, double tol, const char *what) {
   ++g_checks;
   if (!(fabs(got - want) <= tol)) {
     ++g_fail;
@@ -537,6 +537,8 @@ static void test_bands(void) {
              "100th percentile");
 }
 
+void test_doa_host(void);
+
 int main(void) {
   test_geometry();
   test_windows();
@@ -547,6 +549,7 @@ int main(void) {
   test_health();
   test_determinism();
   test_signature();
+  test_doa_host();
 
   printf("\n%d checks, %d failures\n", g_checks, g_fail);
   return g_fail ? 1 : 0;

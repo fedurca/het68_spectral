@@ -6,6 +6,9 @@ build/
 emsdk-cache/
 # Local Basic Auth credentials for "wrangler dev"
 .dev.vars
+
+# H68P test signing private key (never commit production keys)
+packages/license/.test-keys/
 *.tsbuildinfo
 
 # Generated build stamp

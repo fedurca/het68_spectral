@@ -232,6 +232,22 @@ declare module "*/h68dsp.mjs" {
     _h68_api_synth_floats(): number;
     _h68_api_synth_defaults_neo2(fs: number, n: number, out: number): void;
     _h68_api_synth_render(params: number, outPlanar: number): number;
+
+    _h68_api_doa_params_defaults(p: number): void;
+    _h68_api_doa_params_set(p: number): void;
+    _h68_api_doa_params_get(p: number): void;
+    _h68_api_doa_reset(): void;
+    _h68_api_doa_push(interleaved: number, frames: number): void;
+    _h68_api_doa_step(budget: number): number;
+    _h68_api_doa_drain_lines(dst: number, dstBytes: number): number;
+    _h68_api_doa_line_count(): number;
+    _h68_api_doa_ndrone(): number;
+    _h68_api_doa_nvehicle(): number;
+    _h68_api_doa_nbird(): number;
+    _h68_api_doa_nwalker(): number;
+    _h68_api_doa_wind(): number;
+    _h68_api_doa_wind_az(): number;
+    _h68_api_doa_wind_el(): number;
   }
 
   const factory: (options?: Record<string, unknown>) => Promise<H68Module>;

@@ -30,7 +30,10 @@ emcc \
   -std=c11 \
   -ffp-contract=off \
   -fno-fast-math \
+  -DH68_HOST=1 \
   -I csrc \
+  -I csrc/doa \
+  -I csrc/doa/shim \
   csrc/h68_arena.c \
   csrc/h68_fft.c \
   csrc/h68_window.c \
@@ -45,6 +48,12 @@ emcc \
   csrc/h68_api.c \
   csrc/kissfft/kiss_fft.c \
   csrc/kissfft/kiss_fftr.c \
+  csrc/doa/doa.c \
+  csrc/doa/doa_api.c \
+  csrc/doa/shim/debug_io.c \
+  csrc/doa/shim/entity_store.c \
+  csrc/doa/shim/detection_log.c \
+  csrc/doa/shim/doa_host_time.c \
   -o wasm/h68dsp.mjs \
   -s MODULARIZE=1 \
   -s EXPORT_ES6=1 \

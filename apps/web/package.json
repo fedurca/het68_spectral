@@ -1,6 +1,6 @@
 {
   "name": "@het68/web",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "description": "het68 spectral analyzer web application",
@@ -13,6 +13,7 @@
   "dependencies": {
     "@het68/dsp-core": "workspace:*",
     "@het68/io": "workspace:*",
+    "@het68/license": "workspace:*",
     "@het68/ui": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

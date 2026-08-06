@@ -12,6 +12,8 @@ import {
   type StftMetrics,
   type SynthParams,
 } from "./types.js";
+import type { DoaParams, DoaRunResult } from "./doa-params.js";
+import { DEFAULT_DOA_PARAMS } from "./doa-params.js";
 
 /** Channels are microphones 1..6 with no permutation, matching the WAV layout. */
 export const N_CHANNELS = 6;
@@ -950,6 +952,91 @@ export class DspCore {
       const out = s.floats(N_CHANNELS * params.nSamples);
       statusError(this.m._h68_api_synth_render(p, out), "synth render");
       return s.readFloats(out, N_CHANNELS * params.nSamples);
+    } finally {
+      s.release();
+    }
+  }
+
+  // ---- firmware DOA (host/WASM shim) ------------------------------------
+
+  doaSetParams(p: DoaParams): void {
+    const s = new Scratch(this.m);
+    try {
+      const buf = s.floats(12);
+      const heap = this.m.HEAPF32;
+      const o = buf >> 2;
+      heap[o] = p.edgeMm;
+      heap[o + 1] = p.cMmS;
+      heap[o + 2] = p.droneRms;
+      heap[o + 3] = p.windRatio;
+      heap[o + 4] = p.windRmsMin;
+      heap[o + 5] = p.droneCrestMax;
+      heap[o + 6] = p.droneConfMin;
+      heap[o + 7] = p.vehRms;
+      heap[o + 8] = p.birdRms;
+      heap[o + 9] = p.walkRms;
+      heap[o + 10] = p.pairMask;
+      heap[o + 11] = p.logEnabled ? 1 : 0;
+      this.m._h68_api_doa_params_set(buf);
+    } finally {
+      s.release();
+    }
+  }
+
+  doaReset(): void {
+    this.m._h68_api_doa_reset();
+  }
+
+  /**
+   * Run the firmware DOA on planar float audio (converted to int16 like the
+   * USB path). Returns captured SRC/TRACKS lines and track counts.
+   */
+  doaRun(
+    planar: Float32Array,
+    frames: number,
+    params: DoaParams = DEFAULT_DOA_PARAMS,
+  ): DoaRunResult {
+    this.doaSetParams(params);
+    this.doaReset();
+    const s = new Scratch(this.m);
+    try {
+      const chunk = 512;
+      const interleaved = s.bytes(chunk * 6 * 2);
+      for (let off = 0; off < frames; off += chunk) {
+        const n = Math.min(chunk, frames - off);
+        const view = new Int16Array(this.m.HEAPU8.buffer, interleaved, n * 6);
+        for (let i = 0; i < n; i++) {
+          for (let c = 0; c < 6; c++) {
+            const v = planar[c * frames + off + i] ?? 0;
+            const clipped = Math.max(-1, Math.min(1, v));
+            view[i * 6 + c] = (clipped * 20000) | 0;
+          }
+        }
+        this.m._h68_api_doa_push(interleaved, n);
+        this.m._h68_api_doa_step(n);
+      }
+      while (this.m._h68_api_doa_step(2048) > 0) {
+        /* drain */
+      }
+      const cap = 64 * 1024;
+      const dst = s.bytes(cap);
+      const n = this.m._h68_api_doa_drain_lines(dst, cap);
+      const bytes = this.m.HEAPU8.slice(dst, dst + Math.max(0, n));
+      const text = new TextDecoder().decode(bytes);
+      const lines = text
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+      return {
+        lines,
+        ndrone: this.m._h68_api_doa_ndrone(),
+        nvehicle: this.m._h68_api_doa_nvehicle(),
+        nbird: this.m._h68_api_doa_nbird(),
+        nwalker: this.m._h68_api_doa_nwalker(),
+        wind: this.m._h68_api_doa_wind() !== 0,
+        windAz: this.m._h68_api_doa_wind_az(),
+        windEl: this.m._h68_api_doa_wind_el(),
+      };
     } finally {
       s.release();
     }

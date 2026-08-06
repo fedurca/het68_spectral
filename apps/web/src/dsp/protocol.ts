@@ -9,6 +9,8 @@
 
 import type {
   ChannelStats,
+  DoaParams,
+  DoaRunResult,
   F0Candidate,
   F0TrackPoint,
   GccResult,
@@ -121,6 +123,15 @@ export type WorkerRequest =
       bandEdgesHz: number[];
     }
   | { id: number; kind: "synth"; params: SynthParams }
+  | { id: number; kind: "doa"; params: DoaParams }
+  | {
+      id: number;
+      kind: "doaSweep";
+      params: DoaParams;
+      /** Which PARAM key to sweep (e.g. edge_mm, drone_conf_min). */
+      sweepKey: string;
+      values: number[];
+    }
   | { id: number; kind: "spectrumFrame"; channel: number; frame: number }
   | { id: number; kind: "arena" };
 
@@ -274,6 +285,16 @@ export interface SynthResult {
   sampleRate: number;
 }
 
+export type DoaResult = DoaRunResult;
+
+export interface DoaSweepResult {
+  sweepKey: string;
+  points: Array<{
+    value: number;
+    result: DoaRunResult;
+  }>;
+}
+
 export type WorkerResultMap = {
   init: InitResult;
   setEnvironment: EnvironmentResult;
@@ -292,6 +313,8 @@ export type WorkerResultMap = {
   signatureExtract: SignatureResult;
   signatureMatch: SignatureMatchResult;
   synth: SynthResult;
+  doa: DoaResult;
+  doaSweep: DoaSweepResult;
   spectrumFrame: SpectrumFrameResult;
   arena: { usedBytes: number; capacityBytes: number; plans: number };
 };

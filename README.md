@@ -29,21 +29,35 @@ two run different arithmetic.
   rate, with the angular error's GNSS ceiling drawn alongside it.
 - **A synthetic scene generator** in the same C core, which is the only source of known
   truth until real recordings exist.
+- **DOA**: the firmware `doa.c` engine compiled to WebAssembly — SRC/TRACKS lines,
+  runtime `doa_params_t`, PARAM import/export, and 1D threshold sweeps against synth
+  truth.
+- **H68P licensing** (analyzer-side): secp256k1-signed parameter blobs and PARAM import
+  gating. See `docs/licensing-and-secure-boot.md` for the firmware secure-boot contract.
 - **Debug everything**: every intermediate is inspectable per frame and per bin, and
   everything exports to CSV or JSON.
 
 ## Layout
 
 ```
-packages/dsp-core   C DSP compiled to WebAssembly, plus native tests
+packages/dsp-core   C DSP + vendored doa.c → WebAssembly, plus native tests
 packages/io         WAV, annotations, ASTM F3411, geodesy, export
+packages/license    H68P blob schema, secp256k1 verify, PARAM gate
 packages/ui         design tokens, plots, the WebGL spectrogram
 apps/web            the analyzer itself
 apps/desktop        Electron shell, ffmpeg capture, serial
 src/worker.js       Cloudflare Worker: Basic Auth, COOP/COEP, assets
-docs/               recording protocol for the first flights
+docs/               recording protocol, licensing / secure-boot contract
 ```
 
+## Licensing note
+
+The analyzer application code is proprietary to the project. Vendored
+`packages/dsp-core/csrc/doa/` (`doa.c` / `doa.h` and its host shims) is **GPL-3.0**.
+Building the WebAssembly artifact that includes DOA therefore produces a GPL-covered
+binary; see `packages/dsp-core/csrc/doa/LICENSE.GPL3` and `VENDOR.md`. Deployments
+already sit behind Basic Auth; that is access control, not a substitute for GPL
+compliance if you redistribute the WASM.
 ## Requirements
 
 - Node 20 or newer and pnpm 11 (`corepack enable pnpm`).
@@ -134,3 +148,5 @@ Read `docs/recording-protocol.md`. It lists the mistakes that cannot be correcte
 afterwards: an unmeasured cube position, a missing bearing for microphone 1, no
 calibration take, and no time synchronisation between the audio and the Remote ID
 stream.
+
+Licensing and the RP2350 secure-boot / OTP contract for firmware: `docs/licensing-and-secure-boot.md`.

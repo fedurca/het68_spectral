@@ -235,6 +235,18 @@ export class DspClient {
     return this.send<"synth">({ kind: "synth", params });
   }
 
+  doa(params: import("@het68/dsp-core").DoaParams) {
+    return this.send<"doa">({ kind: "doa", params });
+  }
+
+  doaSweep(args: {
+    params: import("@het68/dsp-core").DoaParams;
+    sweepKey: string;
+    values: number[];
+  }) {
+    return this.send<"doaSweep">({ kind: "doaSweep", ...args });
+  }
+
   arena() {
     return this.send<"arena">({ kind: "arena" });
   }

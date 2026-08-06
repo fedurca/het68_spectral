@@ -17,7 +17,11 @@ $CC \
   -ffp-contract=off \
   -Wall -Wextra -Werror \
   -Wno-unused-function \
+  -Wno-unused-variable \
+  -DH68_HOST=1 \
   -I csrc \
+  -I csrc/doa \
+  -I csrc/doa/shim \
   csrc/h68_arena.c \
   csrc/h68_fft.c \
   csrc/h68_window.c \
@@ -31,7 +35,14 @@ $CC \
   csrc/h68_synth.c \
   csrc/kissfft/kiss_fft.c \
   csrc/kissfft/kiss_fftr.c \
+  csrc/doa/doa.c \
+  csrc/doa/doa_api.c \
+  csrc/doa/shim/debug_io.c \
+  csrc/doa/shim/entity_store.c \
+  csrc/doa/shim/detection_log.c \
+  csrc/doa/shim/doa_host_time.c \
   test/test_dsp.c \
+  test/test_doa.c \
   -lm \
   -o test/bin/test_dsp
 

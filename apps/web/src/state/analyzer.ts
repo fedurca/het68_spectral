@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ANALYSIS_BAND,
+  DEFAULT_DOA_PARAMS,
   DEFAULT_EDGE_MM,
   DEFAULT_ENVIRONMENT,
   DEFAULT_SAMPLE_RATE,
@@ -23,6 +24,7 @@ import {
   NEO2,
   SIGNATURE_BAND_EDGES,
   WindowKind,
+  type DoaParams,
   type GeometryInfo,
   type Signature,
   type StftMetrics,
@@ -42,6 +44,8 @@ import type {
   BandSpec,
   BandsResult,
   CoherenceResult,
+  DoaResult,
+  DoaSweepResult,
   EnvironmentResult,
   F0Result,
   HealthResult,
@@ -65,6 +69,8 @@ export interface LoadedAudio {
   wav: WavFile | null;
   /** Non-canonical file warnings, surfaced rather than swallowed. */
   warnings: string[];
+  /** Known source angles when the buffer came from the synth. */
+  synthTruth?: { azDeg: number; elDeg: number; distanceM: number };
 }
 
 export interface BandDefinition extends BandSpec {
@@ -216,6 +222,10 @@ export function useAnalyzer() {
     f0: Float32Array;
   } | null>(null);
 
+  const [doaParams, setDoaParams] = useState<DoaParams>({ ...DEFAULT_DOA_PARAMS });
+  const [doaResult, setDoaResult] = useState<DoaResult | null>(null);
+  const [doaSweep, setDoaSweep] = useState<DoaSweepResult | null>(null);
+
   // ---- annotations -------------------------------------------------------
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [serial, setSerial] = useState<SerialEvent[]>([]);
@@ -302,6 +312,8 @@ export function useAnalyzer() {
     setCoherence(null);
     setF0(null);
     setMatchScore(null);
+    setDoaResult(null);
+    setDoaSweep(null);
   }, []);
 
   // ---- loading -----------------------------------------------------------
@@ -394,6 +406,11 @@ export function useAnalyzer() {
         sampleRate: result.sampleRate,
         wav: null,
         warnings: [],
+        synthTruth: {
+          azDeg: params.azDeg,
+          elDeg: params.elDeg,
+          distanceM: params.distanceM,
+        },
       });
     },
     [run, loadPlanar],
@@ -575,6 +592,31 @@ export function useAnalyzer() {
     [stft, run, harmonic],
   );
 
+  const runDoa = useCallback(async () => {
+    if (!audio) return;
+    const result = await run("DOA", (c) => c.doa(doaParams));
+    if (result) {
+      setDoaResult(result);
+      appendLog(
+        `DOA drones=${result.ndrone} vehicles=${result.nvehicle} birds=${result.nbird} walkers=${result.nwalker} lines=${result.lines.length}`,
+      );
+    }
+  }, [audio, run, doaParams, appendLog]);
+
+  const runDoaSweep = useCallback(
+    async (sweepKey: string, values: number[]) => {
+      if (!audio) return;
+      const result = await run(`DOA sweep ${sweepKey}`, (c) =>
+        c.doaSweep({ params: doaParams, sweepKey, values }),
+      );
+      if (result) {
+        setDoaSweep(result);
+        appendLog(`DOA sweep ${sweepKey}: ${result.points.length} points`);
+      }
+    },
+    [audio, run, doaParams, appendLog],
+  );
+
   // ---- derived helpers ---------------------------------------------------
 
   const spectrogramChannels = useMemo(() => {
@@ -663,6 +705,13 @@ export function useAnalyzer() {
     extractSignature,
     matchSignature,
     matchScore,
+
+    doaParams,
+    setDoaParams,
+    doaResult,
+    doaSweep,
+    runDoa,
+    runDoaSweep,
 
     annotations,
     setAnnotations,
