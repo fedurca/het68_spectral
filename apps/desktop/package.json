@@ -1,6 +1,6 @@
 {
   "name": "@het68/desktop",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "private": true,
   "description": "Electron shell for the het68 spectral analyzer",
   "author": "het68",
@@ -9,7 +9,8 @@
     "start": "pnpm --filter @het68/web run build && electron .",
     "dev": "electron . --dev",
     "selftest": "electron . --selftest",
-    "dist": "pnpm --filter @het68/web run build && electron-builder --mac dmg"
+    "dist": "pnpm --filter @het68/web run build && electron-builder --mac dmg",
+    "dist:snap": "pnpm --filter @het68/web run build && electron-builder --linux snap"
   },
   "devDependencies": {
     "electron": "^40.2.1",
@@ -22,6 +23,10 @@
   "build": {
     "appId": "cz.het68.spectral",
     "productName": "het68 spectral",
+    "executableName": "het68-spectral",
+    "extraMetadata": {
+      "name": "het68-spectral"
+    },
     "directories": {
       "output": "release",
       "buildResources": "resources"
@@ -44,9 +49,7 @@
       "target": [
         {
           "target": "dmg",
-          "arch": [
-            "arm64"
-          ]
+          "arch": ["arm64"]
         }
       ],
       "identity": null,
@@ -63,8 +66,36 @@
       "target": "nsis"
     },
     "linux": {
-      "target": "AppImage",
-      "category": "Science"
+      "target": [
+        {
+          "target": "snap",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Science",
+      "icon": "resources/icon.png",
+      "synopsis": "Spectrogram analyzer for the het68 six-microphone detection cube",
+      "description": "Six-channel spectrograms, DOA, signatures and Remote ID ground truth for the het68 acoustic detection cube."
+    },
+    "snapcraft": {
+      "base": "core24",
+      "core24": {
+        "confinement": "strict",
+        "grade": "stable",
+        "summary": "Spectrogram analyzer for the het68 detection cube",
+        "useDestructiveMode": true,
+        "plugs": [
+          "default",
+          "audio-record",
+          "audio-playback",
+          "alsa",
+          "pulseaudio",
+          "serial-port",
+          "home",
+          "removable-media"
+        ],
+        "stagePackages": ["default", "ffmpeg", "libasound2t64"]
+      }
     }
   }
 }

@@ -4,8 +4,14 @@ All notable changes to het68 spectral are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version tags follow
 [SemVer](https://semver.org/) as `vX.Y.Z`.
 
-Pre-built macOS `.dmg` builds for each tagged release are attached on
-[GitHub Releases](https://github.com/fedurca/het68_spectral/releases).
+Pre-built macOS `.dmg` and Ubuntu `.snap` builds for each tagged release are
+attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases).
+
+## [2.0.3] — 2026-08-06
+
+### Added
+- Ubuntu `.snap` package (electron-builder core24) built in CI and attached to
+  GitHub Releases alongside the macOS `.dmg`.
 
 ## [2.0.2] — 2026-08-06
 

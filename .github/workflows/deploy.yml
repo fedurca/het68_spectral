@@ -169,11 +169,72 @@ jobs:
           body: |
             See [CHANGELOG.md](https://github.com/fedurca/het68_spectral/blob/${{ github.ref_name }}/CHANGELOG.md) for the curated release notes.
 
-            The macOS `.dmg` is **not notarized**. After install, clear quarantine once:
+            ### macOS
+            The `.dmg` is **not notarized**. After install, clear quarantine once:
 
             ```bash
             xattr -cr "/Applications/het68 spectral.app"
             open "/Applications/het68 spectral.app"
             ```
+
+            ### Ubuntu / Linux
+            Install the `.snap` from this release (also built by CI):
+
+            ```bash
+            sudo snap install --dangerous ./het68-spectral_*.snap
+            ```
+
+            `--dangerous` is required until the snap is published on the Snap Store.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  desktop-linux:
+    # Ubuntu snap for the same SemVer tag. Waits on the macOS job so the GitHub
+    # Release already exists, then attaches the .snap asset.
+    needs: [build, desktop]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - name: Install snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft --version
+
+      - name: Build the snap
+        # core24 + useDestructiveMode: build on the GitHub runner host (no LXD/Multipass).
+        run: pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
+        env:
+          SNAPCRAFT_BUILD_ENVIRONMENT: host
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: het68-spectral-snap
+          path: apps/desktop/release/*.snap
+          retention-days: 30
+
+      - name: Attach snap to GitHub Release
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        with:
+          files: apps/desktop/release/*.snap
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

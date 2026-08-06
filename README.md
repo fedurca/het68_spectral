@@ -67,16 +67,29 @@ with release notes / changelog:
 **https://github.com/fedurca/het68_spectral/releases**
 
 Create a GitHub Release whose tag is SemVer ([semver.org](https://semver.org/)) —
-`vX.Y.Z` (e.g. `v2.0.1`) — and CI builds the web bundle, deploys
-`spectral.het68.cz`, builds the unsigned macOS `.dmg`, and attaches it to that
-release. The full history lives in [`CHANGELOG.md`](CHANGELOG.md).
+`vX.Y.Z` (e.g. `v2.0.3`) — and CI builds the web bundle, deploys
+`spectral.het68.cz`, builds the macOS `.dmg` and the Ubuntu `.snap`, and attaches
+both to that release. The full history lives in [`CHANGELOG.md`](CHANGELOG.md).
 
 ```bash
 # list releases
 gh release list -R fedurca/het68_spectral
 
 # download the macOS dmg for a tag
-gh release download v2.0.1 -R fedurca/het68_spectral -p '*.dmg'
+gh release download v2.0.3 -R fedurca/het68_spectral -p '*.dmg'
+
+# download the Ubuntu snap
+gh release download v2.0.3 -R fedurca/het68_spectral -p '*.snap'
+sudo snap install --dangerous ./het68-spectral_*.snap
+```
+
+`--dangerous` is required for sideloaded snaps until the package is published on
+the Snap Store. Connect extra interfaces if live capture or serial need them:
+
+```bash
+sudo snap connect het68-spectral:audio-record
+sudo snap connect het68-spectral:serial-port
+sudo snap connect het68-spectral:alsa
 ```
 
 The `.dmg` is **not notarized** (no Apple Developer identity in CI yet). After
@@ -128,7 +141,8 @@ cent change in rotor speed.
 
 ```bash
 pnpm run desktop       # builds the web bundle and starts Electron
-pnpm run desktop:dmg   # unsigned dmg in apps/desktop/release
+pnpm run desktop:dmg   # unsigned dmg in apps/desktop/release (macOS)
+pnpm run desktop:snap  # snap in apps/desktop/release (Linux; needs snapcraft)
 ```
 
 The renderer is the same bundle the website serves, loaded from a `het68://` scheme
