@@ -1,6 +1,6 @@
 {
   "name": "het68-spectral",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "private": true,
   "type": "module",
   "description": "Spectrogram analyzer for the het68 6-microphone detection cube",

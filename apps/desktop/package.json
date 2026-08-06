@@ -1,6 +1,6 @@
 {
   "name": "@het68/desktop",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "private": true,
   "description": "Electron shell for the het68 spectral analyzer",
   "author": "het68",
@@ -45,18 +45,20 @@
         {
           "target": "dmg",
           "arch": [
-            "arm64",
-            "x64"
+            "arm64"
           ]
         }
       ],
-      "hardenedRuntime": true,
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
       "entitlements": "resources/entitlements.mac.plist",
       "entitlementsInherit": "resources/entitlements.mac.plist",
       "extendInfo": {
         "NSMicrophoneUsageDescription": "het68 spectral records six-channel audio from the detection cube for spectrogram analysis."
       }
     },
+    "afterPack": "./afterPack.cjs",
     "win": {
       "target": "nsis"
     },

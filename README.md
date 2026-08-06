@@ -79,8 +79,19 @@ gh release list -R fedurca/het68_spectral
 gh release download v2.0.1 -R fedurca/het68_spectral -p '*.dmg'
 ```
 
-The `.dmg` is unsigned until an Apple Developer identity is configured in CI; the
-first launch needs Gatekeeper to be overridden by hand.
+The `.dmg` is **not notarized** (no Apple Developer identity in CI yet). After
+installing from a GitHub download, clear the quarantine flag once:
+
+```bash
+xattr -cr "/Applications/het68 spectral.app"
+# or wherever you dragged it from the dmg:
+xattr -cr "/path/to/het68 spectral.app"
+open "/path/to/het68 spectral.app"
+```
+
+If macOS still says the app is damaged, check signature and Gatekeeper assessment
+(see **Desktop troubleshooting** below). Right-click → Open also bypasses the first
+block on some macOS versions.
 
 ## Requirements
 
@@ -134,8 +145,38 @@ prints what it found and exits. It is how a packaging change is verified without
 clicking through the application.
 
 Live capture on macOS goes through `ffmpeg -f avfoundation`, which is the only reliable
-way to get six channels; the browser downmixes to stereo and says nothing about it. The
-dmg is unsigned, so the first launch needs Gatekeeper to be overridden by hand.
+way to get six channels; the browser downmixes to stereo and says nothing about it.
+
+### Desktop troubleshooting (macOS)
+
+**"App is damaged and can't be opened"** after a GitHub download almost always means
+Gatekeeper quarantine on an unnotarized build, not a corrupt binary:
+
+```bash
+APP="/Applications/het68 spectral.app"   # adjust path
+xattr -l "$APP"                          # look for com.apple.quarantine
+xattr -cr "$APP"
+codesign -dv --verbose=4 "$APP"
+spctl --assess -vv "$APP" || true
+open "$APP"
+```
+
+**Better logs when it still fails to start:**
+
+```bash
+# Launch with Electron logging to stderr
+"/Applications/het68 spectral.app/Contents/MacOS/het68 spectral" --enable-logging=stderr 2>&1 | tee ~/Desktop/het68-spectral.log
+
+# Unified log while you reproduce the crash (run in another terminal)
+log stream --style compact --predicate 'process CONTAINS "het68" OR senderImagePath CONTAINS "het68"'
+
+# Gatekeeper / crash history
+log show --last 10m --predicate 'subsystem == "com.apple.syspolicy" OR process CONTAINS "het68"' --info
+open ~/Library/Logs/DiagnosticReports/
+```
+
+Console.app → search for `het68` or `Electron` around the launch time is the GUI
+equivalent. Crash reports land in `~/Library/Logs/DiagnosticReports/`.
 
 ## Deployment
 

@@ -7,6 +7,13 @@ All notable changes to het68 spectral are documented here. The format follows
 Pre-built macOS `.dmg` builds for each tagged release are attached on
 [GitHub Releases](https://github.com/fedurca/het68_spectral/releases).
 
+## [2.0.2] — 2026-08-06
+
+### Fixed
+- macOS `.dmg`: ad-hoc codesign after pack; disable broken unsigned hardened-runtime
+  so Gatekeeper no longer reports "app is damaged" as the only symptom of quarantine.
+- README: clear quarantine (`xattr -cr`) and how to collect Electron / unified logs.
+
 ## [2.0.1] — 2026-08-06
 
 ### Changed

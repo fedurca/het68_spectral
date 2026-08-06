@@ -144,8 +144,10 @@ jobs:
           path: apps/web/dist
 
       - name: Build the dmg
-        # Unsigned. Signing needs an Apple Developer identity in the repository
-        # secrets; until then the dmg has to be opened past Gatekeeper by hand.
+        # No Apple Developer identity in CI yet. electron-builder ships with
+        # identity:null; afterPack.cjs applies an ad-hoc codesign so Gatekeeper
+        # does not report a "damaged" app. Users still need to clear quarantine
+        # on first launch (xattr -cr …) until notarization exists.
         run: pnpm --filter @het68/desktop exec electron-builder --mac dmg --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
@@ -167,6 +169,11 @@ jobs:
           body: |
             See [CHANGELOG.md](https://github.com/fedurca/het68_spectral/blob/${{ github.ref_name }}/CHANGELOG.md) for the curated release notes.
 
-            The macOS `.dmg` is unsigned; override Gatekeeper on first launch.
+            The macOS `.dmg` is **not notarized**. After install, clear quarantine once:
+
+            ```bash
+            xattr -cr "/Applications/het68 spectral.app"
+            open "/Applications/het68 spectral.app"
+            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
