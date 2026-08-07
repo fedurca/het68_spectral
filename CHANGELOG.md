@@ -7,6 +7,15 @@ All notable changes to het68 spectral are documented here. The format follows
 Pre-built macOS `.dmg` and Ubuntu `.snap` builds for each tagged release are
 attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases).
 
+## [2.0.5] — 2026-08-07
+
+### Fixed
+- Snap CI no longer blocks web deploy / macOS dmg (`continue-on-error` + timeouts).
+- Host DOA shim emits `DET` UART lines alongside SRC/TRACKS for analyzer parity.
+
+### Changed
+- Secure-boot docs: reproducible ARM build contract for firmware.
+
 ## [2.0.4] — 2026-08-06
 
 ### Fixed

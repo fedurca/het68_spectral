@@ -1,5 +1,7 @@
 #include "detection_log.h"
+#include "debug_io.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static det_blob_t g_log;
@@ -30,7 +32,20 @@ void detection_log_clear(void) {
   memset(&g_log, 0, sizeof(g_log));
   g_log.next_id = 1;
 }
-void detection_log_list_uart(void) {}
+void detection_log_list_uart(void) {
+  detection_log_core_init();
+  if (!dbg_log_enabled()) return;
+  for (uint32_t i = 0; i < g_log.count; i++) {
+    const det_slot_t *s = &g_log.slots[i];
+    if (!s->used) continue;
+    char buf[192];
+    snprintf(buf, sizeof(buf),
+             "DET id=%u class=%s az=%.1f el=%.1f conf=%.2f inten=%.1fdB\n",
+             (unsigned)s->id, det_class_name((det_class_t)s->cls), (double)s->az,
+             (double)s->el, (double)s->conf, (double)s->intensity_db);
+    dbg_puts(buf);
+  }
+}
 void detection_log_export_nvr(void) {}
 void detection_log_export_hex(void) {}
 bool detection_log_import_begin(void) { return true; }
@@ -78,5 +93,15 @@ uint32_t detection_log_observe(det_class_t cls, uint32_t entity_id, float az,
   g_log.slots[i].intensity_db = intensity_db;
   g_log.slots[i].conf = conf;
   g_log.slots[i].occurrence = 1;
+
+  /* Host UART mirror: firmware keeps DET in flash; the analyzer wants lines. */
+  if (dbg_log_enabled()) {
+    char buf[192];
+    snprintf(buf, sizeof(buf),
+             "DET id=%u class=%s az=%.1f el=%.1f conf=%.2f inten=%.1fdB\n",
+             (unsigned)g_log.slots[i].id, det_class_name(cls), (double)az, (double)el,
+             (double)conf, (double)intensity_db);
+    dbg_puts(buf);
+  }
   return g_log.slots[i].id;
 }

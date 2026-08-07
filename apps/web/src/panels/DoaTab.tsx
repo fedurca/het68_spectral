@@ -276,7 +276,7 @@ export function DoaTab({ analyzer }: { analyzer: Analyzer }) {
         ) : null}
       </Panel>
 
-      <Panel title="SRC / TRACKS" note="UART-style lines from the host shim (SRC, TRACKS, ENTITY).">
+      <Panel title="SRC / DET / TRACKS" note="UART-style lines from the host shim (SRC, DET, TRACKS, ENTITY).">
         {doaResult ? (
           <>
             <div className="btn-row">

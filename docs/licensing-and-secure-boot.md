@@ -77,3 +77,16 @@ Deferred from this repository:
 
 When those land in `het68`, bump a `v3.0.0` (or firmware tag) and point this
 doc at the concrete OTP layout and boot stages.
+
+## Reproducible ARM firmware build (firmware repo)
+
+The analyzer WASM and the RP2350 image must share the same C sources and
+`-ffp-contract=off`. Firmware CI should:
+
+1. Pin `doa.c` (or submodule) to the same revision noted in
+   `packages/dsp-core/csrc/doa/VENDOR.md`.
+2. Build with `arm-none-eabi-gcc` and identical floating-point contract flags.
+3. Publish `.uf2` / `.elf` with `SHA256SUMS.txt` (as `fedurca/het68` releases do).
+
+Signing the encrypted image and writing OTP shares is out of scope here; the
+analyzer only verifies H68P PARAM blobs and documents the contract above.

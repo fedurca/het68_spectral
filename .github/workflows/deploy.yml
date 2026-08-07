@@ -86,27 +86,33 @@ jobs:
           path: packages/dsp-core/wasm
           retention-days: 7
 
-      # Ubuntu snap only on SemVer tags (same cadence as the macOS dmg). Built here
-      # on the already-warm ubuntu runner so we do not open a second Linux job that
-      # can fail during GitHub "resolve action download info" outages.
+      # Ubuntu snap only on SemVer tags. Soft-fail: a hung snapcraft must not
+      # cancel the web deploy or macOS dmg. The release step attaches the snap
+      # when the artifact exists.
       - name: Install snapcraft
         if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        timeout-minutes: 5
         run: |
           sudo snap install snapcraft --classic
           snapcraft --version
 
       - name: Build the snap
         if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        timeout-minutes: 25
+        id: snap_build
         run: pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
         env:
           SNAPCRAFT_BUILD_ENVIRONMENT: host
 
       - uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && steps.snap_build.outcome == 'success'
         with:
           name: het68-spectral-snap
           path: apps/desktop/release/*.snap
           retention-days: 30
+          if-no-files-found: ignore
 
   deploy:
     needs: build
@@ -165,7 +171,9 @@ jobs:
           name: web-dist
           path: apps/web/dist
 
-      - uses: actions/download-artifact@v5
+      - name: Download snap artifact
+        continue-on-error: true
+        uses: actions/download-artifact@v5
         with:
           name: het68-spectral-snap
           path: apps/desktop/release-snap
@@ -185,14 +193,23 @@ jobs:
           path: apps/desktop/release/*.dmg
           retention-days: 30
 
+      - name: Collect release assets
+        run: |
+          mkdir -p release-assets
+          cp apps/desktop/release/*.dmg release-assets/
+          if ls apps/desktop/release-snap/*.snap >/dev/null 2>&1; then
+            cp apps/desktop/release-snap/*.snap release-assets/
+          else
+            echo "No snap artifact — publishing dmg only"
+          fi
+          ls -la release-assets
+
       # Same pattern as het68 firmware: tagged SemVer release gets downloadable
       # assets plus notes pointing at CHANGELOG.md.
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
-          files: |
-            apps/desktop/release/*.dmg
-            apps/desktop/release-snap/*.snap
+          files: release-assets/*
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
@@ -207,19 +224,15 @@ jobs:
             ```
 
             ### Ubuntu / Linux
-            Install the `.snap` from this release:
+            When a `.snap` is attached to this release:
 
             ```bash
             sudo snap install --dangerous ./het68-spectral_*.snap
-            ```
-
-            `--dangerous` is required until the snap is published on the Snap Store.
-            Connect extra interfaces if live capture or serial need them:
-
-            ```bash
             sudo snap connect het68-spectral:audio-record
             sudo snap connect het68-spectral:serial-port
             sudo snap connect het68-spectral:alsa
             ```
+
+            `--dangerous` is required until the snap is published on the Snap Store.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
