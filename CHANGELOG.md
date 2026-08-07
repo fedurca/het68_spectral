@@ -7,6 +7,15 @@ All notable changes to het68 spectral are documented here. The format follows
 Pre-built macOS `.dmg` and Ubuntu `.snap` builds for each tagged release are
 attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases).
 
+## [2.0.6] — 2026-08-07
+
+### Added
+- Desktop: manual **Check for updates** against GitHub Releases (Debug tab); optional
+  `.dmg` download into Downloads — no background auto-update.
+
+### Changed
+- README: uninstall steps for macOS.
+
 ## [2.0.5] — 2026-08-07
 
 ### Fixed

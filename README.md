@@ -106,6 +106,29 @@ If macOS still says the app is damaged, check signature and Gatekeeper assessmen
 (see **Desktop troubleshooting** below). Right-click → Open also bypasses the first
 block on some macOS versions.
 
+### Uninstall (macOS)
+
+There is no separate uninstaller. Remove the app bundle:
+
+```bash
+rm -rf "/Applications/het68 spectral.app"
+```
+
+Optional leftovers (Electron user data / logs, only if present):
+
+```bash
+rm -rf ~/Library/Application\ Support/het68-spectral
+rm -rf ~/Library/Logs/het68-spectral
+rm -rf ~/Library/Preferences/cz.het68.spectral.plist
+```
+
+### Updates (desktop)
+
+The desktop build does **not** auto-update. In **Debug → Build and core**, use
+**Check for updates** to compare the installed version against the latest GitHub
+Release and optionally download the `.dmg` into Downloads. After replacing the app,
+clear quarantine again until notarization exists.
+
 ## Requirements
 
 - Node 20 or newer and pnpm 11 (`corepack enable pnpm`).

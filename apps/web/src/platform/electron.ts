@@ -14,6 +14,7 @@ import type {
   PlatformAdapter,
   SerialPortInfo,
   SerialSession,
+  UpdateCheckResult,
 } from "./index.js";
 
 /** The surface exposed by apps/desktop/preload.cjs. */
@@ -34,6 +35,10 @@ export interface Het68Bridge {
   stopSerial(): Promise<void>;
   onSerialLine(cb: (line: string) => void): () => void;
   saveFile(name: string, contents: string | Uint8Array, mime: string): Promise<void>;
+  checkForUpdate(currentVersion: string): Promise<UpdateCheckResult>;
+  downloadUpdate(opts: { url: string; name?: string }): Promise<{ path: string; name: string }>;
+  openPath(filePath: string): Promise<void>;
+  openExternal(url: string): Promise<void>;
 }
 
 function bridge(): Het68Bridge {
@@ -98,6 +103,11 @@ export function createElectronAdapter(): PlatformAdapter {
     },
 
     saveFile: (name, contents, mime) => bridge().saveFile(name, contents, mime),
+
+    checkForUpdate: (currentVersion) => bridge().checkForUpdate(currentVersion),
+    downloadUpdate: (opts) => bridge().downloadUpdate(opts),
+    openPath: (filePath) => bridge().openPath(filePath),
+    openExternal: (url) => bridge().openExternal(url),
   };
 }
 

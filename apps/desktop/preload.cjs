@@ -37,4 +37,10 @@ contextBridge.exposeInMainWorld("het68", {
       // main process needs to write, so it is normalised here rather than there.
       contents: typeof contents === "string" ? contents : Array.from(contents),
     }),
+
+  checkForUpdate: (currentVersion) =>
+    ipcRenderer.invoke("het68:check-for-update", currentVersion),
+  downloadUpdate: (opts) => ipcRenderer.invoke("het68:download-update", opts),
+  openPath: (filePath) => ipcRenderer.invoke("het68:open-path", filePath),
+  openExternal: (url) => ipcRenderer.invoke("het68:open-external", url),
 });

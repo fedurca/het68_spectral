@@ -95,6 +95,33 @@ export interface PlatformAdapter {
 
   /** Native save dialog where there is one, a download otherwise. */
   saveFile(name: string, contents: string | Uint8Array, mime: string): Promise<void>;
+
+  /**
+   * Desktop only: compare the running build to the latest GitHub Release.
+   * Manual — never runs unless the user asks.
+   */
+  checkForUpdate?(currentVersion: string): Promise<UpdateCheckResult>;
+  /** Desktop only: download a release asset into Downloads. */
+  downloadUpdate?(opts: {
+    url: string;
+    name?: string;
+  }): Promise<{ path: string; name: string }>;
+  openPath?(filePath: string): Promise<void>;
+  openExternal?(url: string): Promise<void>;
+}
+
+export interface UpdateCheckResult {
+  status: "available" | "up-to-date" | "newer-local" | "error";
+  current: string;
+  latest?: string;
+  tag?: string;
+  name?: string;
+  publishedAt?: string | null;
+  notes?: string;
+  releaseUrl: string;
+  downloadUrl?: string | null;
+  downloadName?: string | null;
+  message: string;
 }
 
 declare global {

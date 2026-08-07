@@ -17,6 +17,7 @@ const path = require("node:path");
 const fs = require("node:fs/promises");
 const { pathToFileURL } = require("node:url");
 const { Capture } = require("./capture.cjs");
+const update = require("./update.cjs");
 
 const isDev = process.argv.includes("--dev");
 /* Loads the renderer, reports what the environment gives it, and exits. Packaging is
@@ -321,3 +322,12 @@ ipcMain.handle("het68:save-file", async (_e, { name, contents }) => {
     typeof contents === "string" ? contents : Buffer.from(new Uint8Array(contents));
   await fs.writeFile(result.filePath, data);
 });
+
+// ---- updates (manual, GitHub Releases) ------------------------------------
+
+ipcMain.handle("het68:check-for-update", (_e, currentVersion) =>
+  update.checkForUpdate(currentVersion),
+);
+ipcMain.handle("het68:download-update", (_e, opts) => update.downloadUpdate(opts));
+ipcMain.handle("het68:open-path", (_e, filePath) => update.openPath(filePath));
+ipcMain.handle("het68:open-external", (_e, url) => update.openExternal(url));

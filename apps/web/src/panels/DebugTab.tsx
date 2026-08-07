@@ -35,6 +35,9 @@ import {
 import type { BuildInfo } from "../buildinfo.js";
 import type { Analyzer } from "../state/analyzer.js";
 import type { TimingRecord } from "../dsp/client.js";
+import { getPlatform, type UpdateCheckResult } from "../platform/index.js";
+
+const RELEASES_PAGE = "https://github.com/fedurca/het68_spectral/releases";
 
 export function DebugTab({
   analyzer,
@@ -77,6 +80,10 @@ export function DebugTab({
   const [inspectFrame, setInspectFrame] = useState(0);
   const [binFrom, setBinFrom] = useState(0);
   const [binTo, setBinTo] = useState(64);
+  const [updateBusy, setUpdateBusy] = useState(false);
+  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [downloadPath, setDownloadPath] = useState<string | null>(null);
 
   const byKind = useMemo(() => {
     const map = new Map<string, { n: number; total: number; worst: number; failures: number }>();
@@ -172,11 +179,78 @@ export function DebugTab({
     );
   };
 
+  const checkForUpdate = async () => {
+    setUpdateBusy(true);
+    setUpdateError(null);
+    setDownloadPath(null);
+    try {
+      const platform = await getPlatform();
+      const version = build?.version ?? "0.0.0";
+      if (platform.checkForUpdate) {
+        const result = await platform.checkForUpdate(version);
+        setUpdateResult(result);
+      } else {
+        window.open(RELEASES_PAGE, "_blank", "noopener,noreferrer");
+        setUpdateResult({
+          status: "up-to-date",
+          current: version,
+          releaseUrl: RELEASES_PAGE,
+          message:
+            "Browser build: opened GitHub Releases. Desktop can compare and download the .dmg.",
+        });
+      }
+    } catch (err) {
+      setUpdateResult(null);
+      setUpdateError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
+  const openReleasePage = async () => {
+    const url = updateResult?.releaseUrl ?? RELEASES_PAGE;
+    const platform = await getPlatform();
+    if (platform.openExternal) await platform.openExternal(url);
+    else window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadUpdate = async () => {
+    if (!updateResult?.downloadUrl) return;
+    setUpdateBusy(true);
+    setUpdateError(null);
+    try {
+      const platform = await getPlatform();
+      if (!platform.downloadUpdate) {
+        await openReleasePage();
+        return;
+      }
+      const saved = await platform.downloadUpdate({
+        url: updateResult.downloadUrl,
+        name: updateResult.downloadName ?? undefined,
+      });
+      setDownloadPath(saved.path);
+      if (platform.openPath) await platform.openPath(saved.path);
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
   return (
     <>
       <Panel
         title="Build and core"
-        actions={<Button primary onClick={exportEverything}>Export everything</Button>}
+        actions={
+          <>
+            <Button onClick={() => void checkForUpdate()} disabled={updateBusy}>
+              {updateBusy ? "Checking…" : "Check for updates"}
+            </Button>
+            <Button primary onClick={exportEverything}>
+              Export everything
+            </Button>
+          </>
+        }
         note="Every export carries the version and commit that produced it, so a result found six months from now traces back to the code that made it."
       >
         <Readout
@@ -206,6 +280,53 @@ export function DebugTab({
             ],
           ]}
         />
+        {(updateResult || updateError) && (
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {updateResult && (
+                <Badge
+                  tone={
+                    updateResult.status === "available"
+                      ? "warn"
+                      : updateResult.status === "error"
+                        ? "error"
+                        : "ok"
+                  }
+                >
+                  {updateResult.status}
+                </Badge>
+              )}
+              <span className="panel-note" style={{ margin: 0 }}>
+                {updateError ?? updateResult?.message}
+              </span>
+            </div>
+            {updateResult?.latest && (
+              <Readout
+                rows={[
+                  ["installed", updateResult.current],
+                  ["latest on GitHub", updateResult.latest],
+                  ["published", updateResult.publishedAt ?? "—"],
+                  ["dmg", updateResult.downloadName ?? "not attached"],
+                ]}
+              />
+            )}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Button onClick={() => void openReleasePage()}>Open release page</Button>
+              {updateResult?.status === "available" && updateResult.downloadUrl && (
+                <Button primary onClick={() => void downloadUpdate()} disabled={updateBusy}>
+                  Download .dmg to Downloads
+                </Button>
+              )}
+            </div>
+            {downloadPath && (
+              <p className="panel-note" style={{ margin: 0 }}>
+                Saved to {downloadPath}. Mount the dmg, replace the app in Applications,
+                then run <code>xattr -cr "/Applications/het68 spectral.app"</code> until
+                notarization exists.
+              </p>
+            )}
+          </div>
+        )}
         <p className="panel-note">
           The same C sources build to WebAssembly here and to the firmware's second core,
           with floating-point contraction disabled in both so a result computed in the
