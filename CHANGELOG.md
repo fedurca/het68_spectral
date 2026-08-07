@@ -16,6 +16,11 @@ attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases
 ### Changed
 - README: uninstall steps for macOS.
 
+### Fixed
+- Ubuntu snap: drop plugs already in electron-builder `default` (`home`,
+  `audio-playback`, `pulseaudio`) so snapcraft 9 validation succeeds; snap builds
+  in a dedicated CI job and attaches to the GitHub Release.
+
 ## [2.0.5] — 2026-08-07
 
 ### Fixed

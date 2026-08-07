@@ -6,9 +6,17 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      attach_snap_tag:
+        description: >-
+          Build the Ubuntu snap and attach it to an existing GitHub Release
+          (e.g. v2.0.6). Leave empty on ordinary runs.
+        required: false
+        type: string
+        default: ""
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.attach_snap_tag || 'none' }}
   cancel-in-progress: true
 
 jobs:
@@ -86,34 +94,6 @@ jobs:
           path: packages/dsp-core/wasm
           retention-days: 7
 
-      # Ubuntu snap only on SemVer tags. Soft-fail: a hung snapcraft must not
-      # cancel the web deploy or macOS dmg. The release step attaches the snap
-      # when the artifact exists.
-      - name: Install snapcraft
-        if: startsWith(github.ref, 'refs/tags/v')
-        continue-on-error: true
-        timeout-minutes: 5
-        run: |
-          sudo snap install snapcraft --classic
-          snapcraft --version
-
-      - name: Build the snap
-        if: startsWith(github.ref, 'refs/tags/v')
-        continue-on-error: true
-        timeout-minutes: 25
-        id: snap_build
-        run: pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
-        env:
-          SNAPCRAFT_BUILD_ENVIRONMENT: host
-
-      - uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/v') && steps.snap_build.outcome == 'success'
-        with:
-          name: het68-spectral-snap
-          path: apps/desktop/release/*.snap
-          retention-days: 30
-          if-no-files-found: ignore
-
   deploy:
     needs: build
     # The repository check keeps the Cloudflare token out of forks: a pull request from
@@ -171,13 +151,6 @@ jobs:
           name: web-dist
           path: apps/web/dist
 
-      - name: Download snap artifact
-        continue-on-error: true
-        uses: actions/download-artifact@v5
-        with:
-          name: het68-spectral-snap
-          path: apps/desktop/release-snap
-
       - name: Build the dmg
         # No Apple Developer identity in CI yet. electron-builder ships with
         # identity:null; afterPack.cjs applies an ad-hoc codesign so Gatekeeper
@@ -193,23 +166,13 @@ jobs:
           path: apps/desktop/release/*.dmg
           retention-days: 30
 
-      - name: Collect release assets
-        run: |
-          mkdir -p release-assets
-          cp apps/desktop/release/*.dmg release-assets/
-          if ls apps/desktop/release-snap/*.snap >/dev/null 2>&1; then
-            cp apps/desktop/release-snap/*.snap release-assets/
-          else
-            echo "No snap artifact — publishing dmg only"
-          fi
-          ls -la release-assets
-
       # Same pattern as het68 firmware: tagged SemVer release gets downloadable
-      # assets plus notes pointing at CHANGELOG.md.
+      # assets plus notes pointing at CHANGELOG.md. The Ubuntu snap is attached by
+      # the separate `snap` job so a snapcraft failure cannot block the dmg.
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
-          files: release-assets/*
+          files: apps/desktop/release/*.dmg
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
@@ -236,3 +199,74 @@ jobs:
             `--dangerous` is required until the snap is published on the Snap Store.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  snap:
+    # Own job so snapcraft 9 / runner issues cannot soft-fail away unnoticed while
+    # still leaving the macOS dmg release intact. Can also backfill an existing
+    # release via workflow_dispatch input attach_snap_tag.
+    needs: build
+    if: >-
+      github.repository == 'fedurca/het68_spectral' &&
+      (startsWith(github.ref, 'refs/tags/v') ||
+       (github.event_name == 'workflow_dispatch' && inputs.attach_snap_tag != ''))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.attach_snap_tag }}" ]; then
+            echo "tag=${{ inputs.attach_snap_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install snapcraft
+        timeout-minutes: 5
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft --version
+
+      - name: Build the snap
+        timeout-minutes: 45
+        run: pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
+        env:
+          SNAPCRAFT_BUILD_ENVIRONMENT: host
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: het68-spectral-snap
+          path: apps/desktop/release/*.snap
+          retention-days: 30
+
+      - name: Attach snap to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          ls -la apps/desktop/release/*.snap
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG does not exist yet; creating a draft shell for the snap."
+            gh release create "$TAG" --title "$TAG" --notes "See CHANGELOG.md" --latest=false
+          fi
+          gh release upload "$TAG" apps/desktop/release/*.snap --clobber
+          gh release view "$TAG" --json assets --jq '.assets[].name'

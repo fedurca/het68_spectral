@@ -91,11 +91,8 @@
         "plugs": [
           "default",
           "audio-record",
-          "audio-playback",
           "alsa",
-          "pulseaudio",
           "serial-port",
-          "home",
           "removable-media"
         ],
         "stagePackages": [
