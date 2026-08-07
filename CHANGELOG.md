@@ -7,6 +7,13 @@ All notable changes to het68 spectral are documented here. The format follows
 Pre-built macOS `.dmg` and Ubuntu `.snap` builds for each tagged release are
 attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases).
 
+## [Unreleased]
+
+### Fixed
+- CI: bump GitHub Actions to Node 24 runtimes (`checkout` v7, `setup-node` v7,
+  `upload-artifact` v7, `download-artifact` v8, `pnpm/action-setup` v6,
+  `setup-emsdk` v16, `action-gh-release` v3) and build on Node 24 LTS.
+
 ## [2.0.6] — 2026-08-07
 
 ### Added

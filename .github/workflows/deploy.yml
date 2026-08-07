@@ -23,7 +23,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # build-info stamps the commit, and a shallow clone still knows it, but the
           # branch name and dirty check need the real repository.
@@ -31,11 +31,11 @@ jobs:
 
       # Version comes from package.json "packageManager"; pinning it here as well makes
       # pnpm/action-setup refuse to run with ERR_PNPM_BAD_PM_VERSION.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install
@@ -47,10 +47,13 @@ jobs:
       # Pinned to a commit rather than a tag. A tag is mutable, and this action runs
       # with access to the checkout before the deploy job ever sees a secret.
       - name: Set up Emscripten
-        uses: emscripten-core/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
+        uses: emscripten-core/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
         with:
           version: 4.0.19
           actions-cache-folder: emsdk-cache
+          # Bump the key when the cache action / folder layout changes so a stale
+          # Node-20-era entry cannot 400 the restore path.
+          cache-key: emsdk-4.0.19-v16-${{ runner.os }}-${{ runner.arch }}
 
       - name: Build the DSP core to WebAssembly
         run: pnpm run build:dsp
@@ -80,7 +83,7 @@ jobs:
       - name: Build the web application
         run: pnpm --filter @het68/web run build
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: web-dist
           path: apps/web/dist
@@ -88,7 +91,7 @@ jobs:
 
       # The WebAssembly artifact is not committed, so the deploy job would otherwise
       # have to rebuild it with the whole Emscripten toolchain.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dsp-wasm
           path: packages/dsp-core/wasm
@@ -105,9 +108,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: web-dist
           path: apps/web/dist
@@ -134,19 +137,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: web-dist
           path: apps/web/dist
@@ -160,7 +163,7 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: het68-spectral-macos
           path: apps/desktop/release/*.dmg
@@ -170,7 +173,7 @@ jobs:
       # assets plus notes pointing at CHANGELOG.md. The Ubuntu snap is attached by
       # the separate `snap` job so a snapcraft failure cannot block the dmg.
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           files: apps/desktop/release/*.dmg
           fail_on_unmatched_files: true
@@ -213,19 +216,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: web-dist
           path: apps/web/dist
@@ -251,7 +254,7 @@ jobs:
         env:
           SNAPCRAFT_BUILD_ENVIRONMENT: host
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: het68-spectral-snap
           path: apps/desktop/release/*.snap
