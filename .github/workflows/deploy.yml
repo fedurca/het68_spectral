@@ -116,17 +116,15 @@ jobs:
           path: apps/web/dist
 
       - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # This job has no workspace install, so the action fetches wrangler itself.
-          # The version is the one in the root package.json, so a deployment uses the
-          # same wrangler that was used locally.
-          packageManager: npm
-          wranglerVersion: "4.119.0"
-          # Assets are uploaded from apps/web/dist as configured in wrangler.toml.
-          command: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          # wrangler-action runs `npm i` in this pnpm workspace and npm 11 crashes
+          # (Cannot read properties of null (reading 'edgesOut')). Install beside it.
+          npm install --prefix /tmp/wrangler-cli wrangler@4.119.0
+          /tmp/wrangler-cli/node_modules/.bin/wrangler deploy
 
   desktop:
     # Only for tagged releases: a dmg on every push to main would be noise, and the
@@ -247,10 +245,20 @@ jobs:
         run: |
           sudo snap install snapcraft --classic
           snapcraft --version
+          # electron-builder calls `snapcraft` on PATH. As a normal user it refuses
+          # to apt-get update, then 404s on a libxml2 deb the stale runner lists
+          # still name. Root snapcraft refreshes the indexes first.
+          mkdir -p "$HOME/bin"
+          printf '%s\n' '#!/bin/sh' 'exec sudo --preserve-env=SNAPCRAFT_BUILD_ENVIRONMENT /snap/bin/snapcraft "$@"' > "$HOME/bin/snapcraft"
+          chmod +x "$HOME/bin/snapcraft"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
 
       - name: Build the snap
         timeout-minutes: 45
-        run: pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
+        run: |
+          sudo apt-get update
+          rm -rf "${HOME}/.cache/snapcraft"
+          pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never
         env:
           SNAPCRAFT_BUILD_ENVIRONMENT: host
 
