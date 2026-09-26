@@ -245,14 +245,16 @@ jobs:
         run: |
           sudo snap install snapcraft --classic
           snapcraft --version
+          # Snapcraft 9.1 looks for the desktop file in snap/meta/gui before it
+          # copies snap/gui there. electron-builder only writes snap/gui.
+          python3 -c 'import os; from pathlib import Path; p=Path(os.environ["HOME"])/"bin"/"snapcraft"; p.parent.mkdir(parents=True, exist_ok=True); p.write_text("#!/bin/sh\nif [ -d snap/gui ]; then\n  mkdir -p snap/meta/gui\n  cp -a snap/gui/. snap/meta/gui/\nfi\nexec /snap/bin/snapcraft \"$@\"\n"); p.chmod(0o755)'
+          echo "$HOME/bin" >> "$GITHUB_PATH"
 
       - name: Build the snap
         timeout-minutes: 45
         run: |
-          # The runner image's apt lists still name libxml2 revisions Ubuntu has
-          # deleted. Snapcraft will not refresh them unless this update already
-          # happened. Keep snapcraft itself unprivileged: as root it cannot see
-          # the desktop file electron-builder writes for the runner user.
+          # Runner images keep apt lists that still name libxml2 revisions Ubuntu
+          # has deleted. Snapcraft will not refresh them itself unless it is root.
           sudo apt-get update
           rm -rf "${HOME}/.cache/snapcraft"
           pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never

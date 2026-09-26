@@ -13,9 +13,9 @@ attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases
 - CI: bump GitHub Actions to Node 24 runtimes (`checkout` v7, `setup-node` v7,
   `upload-artifact` v7, `download-artifact` v8, `pnpm/action-setup` v6,
   `setup-emsdk` v16, `action-gh-release` v3) and build on Node 24 LTS.
-- Snap CI: `apt-get update` before snapcraft, so a stale runner package list
-  does not 404 on a removed `libxml2` deb. Snapcraft stays unprivileged; as
-  root it cannot see the desktop file electron-builder writes.
+- Snap CI: refresh apt before snapcraft, and copy `snap/gui` to
+  `snap/meta/gui`. A stale package list 404'd on `libxml2`, and snapcraft 9.1
+  then failed because electron-builder's desktop file was not yet in `meta/gui`.
 - Web deploy: install Wrangler outside the pnpm workspace. `npm i` in the repo
   root crashed with `edgesOut`.
 
