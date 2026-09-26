@@ -14,6 +14,15 @@ attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases
   `upload-artifact` v7, `download-artifact` v8, `pnpm/action-setup` v6,
   `setup-emsdk` v16, `action-gh-release` v3) and build on Node 24 LTS.
 
+## [2.0.7] — 2026-09-26
+
+### Added
+- **2 kHz position** tab. It finds the loudest half-second of a tone in the
+  drone band (default 2000 Hz) and marks the nearest microphone. With six
+  channels it also draws an energy-weighted azimuth on the nominal cube.
+  A two-channel buffer, which is what Chromium delivers from this sound card,
+  is drawn as a left/right axis and labelled as a downmix.
+
 ## [2.0.6] — 2026-08-07
 
 ### Added

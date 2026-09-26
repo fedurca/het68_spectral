@@ -14,6 +14,7 @@ import { SignatureTab } from "./panels/SignatureTab.js";
 import { GroundTruthTab } from "./panels/GroundTruthTab.js";
 import { LiveTab } from "./panels/LiveTab.js";
 import { DoaTab } from "./panels/DoaTab.js";
+import { TonePositionTab } from "./panels/TonePositionTab.js";
 import { DebugTab } from "./panels/DebugTab.js";
 
 const TABS = [
@@ -23,6 +24,7 @@ const TABS = [
   { id: "health", label: "Array health" },
   { id: "signature", label: "Drone signatures" },
   { id: "doa", label: "DOA" },
+  { id: "tone", label: "2 kHz position" },
   { id: "truth", label: "Ground truth" },
   { id: "live", label: "Live input" },
   { id: "debug", label: "Debug" },
@@ -111,6 +113,7 @@ export function App() {
             {tab === "health" ? <HealthTab analyzer={analyzer} /> : null}
             {tab === "signature" ? <SignatureTab analyzer={analyzer} /> : null}
             {tab === "doa" ? <DoaTab analyzer={analyzer} /> : null}
+            {tab === "tone" ? <TonePositionTab analyzer={analyzer} /> : null}
             {tab === "truth" ? <GroundTruthTab analyzer={analyzer} /> : null}
             {tab === "live" ? <LiveTab analyzer={analyzer} /> : null}
             {tab === "debug" ? (

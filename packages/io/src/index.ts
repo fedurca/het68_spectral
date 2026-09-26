@@ -1,3 +1,4 @@
+export * from "./tone-position.js";
 export * from "./wav.js";
 export * from "./session.js";
 export * from "./annotations.js";
