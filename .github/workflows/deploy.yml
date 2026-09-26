@@ -245,17 +245,14 @@ jobs:
         run: |
           sudo snap install snapcraft --classic
           snapcraft --version
-          # electron-builder calls `snapcraft` on PATH. As a normal user it refuses
-          # to apt-get update, then 404s on a libxml2 deb the stale runner lists
-          # still name. Root snapcraft refreshes the indexes first.
-          mkdir -p "$HOME/bin"
-          printf '%s\n' '#!/bin/sh' 'exec sudo --preserve-env=SNAPCRAFT_BUILD_ENVIRONMENT /snap/bin/snapcraft "$@"' > "$HOME/bin/snapcraft"
-          chmod +x "$HOME/bin/snapcraft"
-          echo "$HOME/bin" >> "$GITHUB_PATH"
 
       - name: Build the snap
         timeout-minutes: 45
         run: |
+          # The runner image's apt lists still name libxml2 revisions Ubuntu has
+          # deleted. Snapcraft will not refresh them unless this update already
+          # happened. Keep snapcraft itself unprivileged: as root it cannot see
+          # the desktop file electron-builder writes for the runner user.
           sudo apt-get update
           rm -rf "${HOME}/.cache/snapcraft"
           pnpm --filter @het68/desktop exec electron-builder --linux snap --publish never

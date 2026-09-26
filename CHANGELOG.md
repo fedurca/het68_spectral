@@ -13,8 +13,9 @@ attached on [GitHub Releases](https://github.com/fedurca/het68_spectral/releases
 - CI: bump GitHub Actions to Node 24 runtimes (`checkout` v7, `setup-node` v7,
   `upload-artifact` v7, `download-artifact` v8, `pnpm/action-setup` v6,
   `setup-emsdk` v16, `action-gh-release` v3) and build on Node 24 LTS.
-- Snap CI: refresh apt and run snapcraft as root. A non-root host build kept a
-  stale package list and 404'd on a removed `libxml2` deb.
+- Snap CI: `apt-get update` before snapcraft, so a stale runner package list
+  does not 404 on a removed `libxml2` deb. Snapcraft stays unprivileged; as
+  root it cannot see the desktop file electron-builder writes.
 - Web deploy: install Wrangler outside the pnpm workspace. `npm i` in the repo
   root crashed with `edgesOut`.
 
